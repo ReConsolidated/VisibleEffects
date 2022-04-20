@@ -1,0 +1,11 @@
+name: VisibleEffects
+version: '${project.version}'
+main: io.github.reconsolidated.visibleeffects.VisibleEffects
+api-version: 1.17
+authors: [ GracjanPasik ]
+commands:
+  vp:
+    description: Es
+    permission: VP.admin
+  karnet:
+    description: Pokazuje karnet gracza
