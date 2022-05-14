@@ -3,6 +3,7 @@ version: '${project.version}'
 main: io.github.reconsolidated.visibleeffects.VisibleEffects
 api-version: 1.17
 authors: [ GracjanPasik ]
+depend: [ PlaceholderAPI ]
 commands:
   vp:
     description: Es

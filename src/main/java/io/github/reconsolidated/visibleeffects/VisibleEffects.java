@@ -1,8 +1,11 @@
 package io.github.reconsolidated.visibleeffects;
 
+import dev.esophose.playerparticles.api.PlayerParticlesAPI;
+import dev.esophose.playerparticles.particles.FixedParticleEffect;
 import io.github.reconsolidated.itemprovider.ItemProvider;
 import io.github.reconsolidated.visibleeffects.BattlePass.BattlePassCommand;
 import io.github.reconsolidated.visibleeffects.EffectsMenu.PlayerEffectsInventory;
+import io.github.reconsolidated.visibleeffects.Placeholders.BedwarsRankPlaceholders;
 import io.github.reconsolidated.visibleeffects.PostgreDB.DatabaseConnector;
 import io.github.reconsolidated.visibleeffects.PostgreDB.DatabaseFunctions;
 import lombok.Getter;
@@ -30,6 +33,8 @@ public final class VisibleEffects extends JavaPlugin {
     // void showBedwarsEffectsMenu(Player player)
     // List<String> getEffects(Player player) - done
 
+    public static PlayerParticlesAPI ppAPI;
+
     @Getter
     private CustomModelDataProvider cmdProvider;
 
@@ -44,6 +49,15 @@ public final class VisibleEffects extends JavaPlugin {
     public void onEnable() {
         // Plugin startup logic
         instance = this;
+        ppAPI = PlayerParticlesAPI.getInstance();
+
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            for (FixedParticleEffect effect : ppAPI.getFixedParticleEffects(Bukkit.getConsoleSender())) {
+                ppAPI.removeFixedEffect(Bukkit.getConsoleSender(), effect.getId());
+            }
+        }, 40L);
+
+        new BedwarsRankPlaceholders(this).register();
         DefaultConfig.loadDefaultConfig();
         DatabaseConnector.connect();
         getCommand("vp").setExecutor(new VPCommand(this));

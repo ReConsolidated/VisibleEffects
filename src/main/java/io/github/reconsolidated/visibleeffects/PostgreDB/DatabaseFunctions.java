@@ -5,6 +5,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
+import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -460,5 +461,42 @@ public class DatabaseFunctions {
     }
 
 
+    @Nullable
+    public static List<PlayerData> loadPlayersData(String orderBy, int limit) {
+        if (DatabaseConnector.getSql() == null) {
+            Bukkit.getLogger().warning("Database is not connected.");
+            return null;
+        }
+        List<PlayerData> data = new ArrayList<>();
+
+        try {
+            Statement statement = DatabaseConnector.getSql().createStatement();
+
+            String sql = "SELECT * FROM bedwars_ranked WHERE queue_name='bedwars' ORDER BY %s DESC LIMIT %d;".formatted(orderBy, limit);
+            statement.executeQuery(sql);
+            ResultSet result = statement.getResultSet();
+            int rank = 1;
+            while (result.next()) {
+                data.add(new PlayerData(
+                        result.getString("player_name"),
+                        result.getString("queue_name"),
+                        result.getDouble("elo"),
+                        result.getInt("games_played"),
+                        result.getInt("streak"),
+                        result.getInt("final_kills"),
+                        result.getInt("deaths"),
+                        result.getInt("kills"),
+                        result.getInt("beds_destroyed"),
+                        result.getInt("sum_of_places"),
+                        rank
+                ));
+                rank++;
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            return null;
+        }
+        return data;
+    }
 
 }
