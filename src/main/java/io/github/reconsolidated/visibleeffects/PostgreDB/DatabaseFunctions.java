@@ -1,6 +1,8 @@
 package io.github.reconsolidated.visibleeffects.PostgreDB;
 
+import io.github.reconsolidated.visibleeffects.EffectsProfile;
 import io.github.reconsolidated.visibleeffects.VisibleEffects;
+import lombok.AllArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -9,12 +11,52 @@ import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class DatabaseFunctions {
+
+    private static Set<LoadedEffects> loadedEffects = new HashSet<>();
+    private static Set<EffectsProfile> profiles = new HashSet<>();
+
+
+
+    public static EffectsProfile getEffectsProfile(Player player) {
+        for (EffectsProfile profile : profiles) {
+            if (profile.getPlayerUUID().equals(player.getUniqueId())) {
+                return profile;
+            }
+        }
+
+        loadProfile(player);
+        return null;
+    }
+
+    public static void loadProfile(Player player) {
+        if (DatabaseConnector.getSql() == null) {
+            Bukkit.getLogger().warning("Database is not connected.");
+            return;
+        }
+
+        try {
+            Statement statement = DatabaseConnector.getSql().createStatement();
+
+            String sql = """
+                    SELECT event_name, name FROM visible_effects a INNER JOIN (SELECT effect_id, event_name 
+                    											    FROM visible_effects_profile_data WHERE 
+                    											    player_uuid='%s') b ON a.effect_id=b.effect_id;
+                    """.formatted(player.getUniqueId().toString());
+            statement.executeQuery(sql);
+            ResultSet result = statement.getResultSet();
+            Map<VisibleEffects.EFFECT_EVENT, String> r = new HashMap<>();
+            while (result.next()) {
+                r.put(VisibleEffects.EFFECT_EVENT.valueOf(result.getString("event_name")), result.getString("name"));
+            }
+            profiles.removeIf((profile) -> profile.getPlayerUUID().equals(player.getUniqueId()));
+            profiles.add(new EffectsProfile(player.getUniqueId(), r));
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
 
 
     public static void setPlayerMeta(Player player, String metaKey, String metaValue) {
@@ -104,7 +146,7 @@ public class DatabaseFunctions {
         return true;
     }
 
-    public static List<String> getPlayerEffects(Player player) {
+    public static List<String> loadPlayerEffects(Player player) {
         if (DatabaseConnector.getSql() == null) {
             Bukkit.getLogger().warning("Database is not connected.");
             return null;
@@ -124,11 +166,23 @@ public class DatabaseFunctions {
             while (result.next()) {
                 r.add(result.getString("name"));
             }
+            loadedEffects.removeIf((le) -> le.playerUUID.equals(player.getUniqueId()));
+            loadedEffects.add(new LoadedEffects(player.getUniqueId(), r));
             return r;
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             return null;
         }
+    }
+
+    public static List<String> getPlayerEffects(Player player) {
+        for (LoadedEffects le : loadedEffects) {
+            if (le.playerUUID.equals(player.getUniqueId())) {
+                return le.effects;
+            }
+        }
+
+        return loadPlayerEffects(player);
     }
 
     public static Map<Material, Integer> getPlayerCMDData(String name) {
@@ -499,4 +553,19 @@ public class DatabaseFunctions {
         return data;
     }
 
+
+    @AllArgsConstructor
+    private static class LoadedEffects {
+        public UUID playerUUID;
+        public List<String> effects;
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof LoadedEffects) {
+                LoadedEffects le = (LoadedEffects) obj;
+                return playerUUID.equals(le.playerUUID);
+            }
+            return false;
+        }
+    }
 }
