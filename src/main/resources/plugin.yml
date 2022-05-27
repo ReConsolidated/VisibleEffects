@@ -10,3 +10,5 @@ commands:
     permission: VP.admin
   karnet:
     description: Pokazuje karnet gracza
+  efekty:
+    description: Wyświetla listę efektów.

@@ -26,6 +26,7 @@ import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.List;
 
 public final class VisibleEffects extends JavaPlugin implements Listener {
@@ -71,6 +72,7 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
         DatabaseConnector.connect();
         getCommand("vp").setExecutor(new VPCommand(this));
         getCommand("karnet").setExecutor(new BattlePassCommand(this));
+        getCommand("efekty").setExecutor(new EffectsCommand());
         getServer().getServicesManager().register(VisibleEffects.class, this, this, ServicePriority.Normal);
         getServer().getPluginManager().registerEvents(this, this);
 
@@ -101,25 +103,16 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
      * @return
      */
     public boolean giveEffect(Player player, String effect, Long time) {
-        String type = effect.split(":")[0];
-        String name = effect.split(":")[1];
-        if (type.equalsIgnoreCase("player_effect")) {
-            return DatabaseFunctions.addPlayerEffect(player, effect, System.currentTimeMillis() + time);
-        }
-        else if (type.equalsIgnoreCase("custom_item")) {
-            // TODO
-            return false;
-        }
-        throw new RuntimeException("Nie ma takiego efektu: " + effect);
+        return DatabaseFunctions.addPlayerEffect(player, effect, System.currentTimeMillis() + time);
     }
 
     @Nullable
-    public List<String> getEffects(Player player) {
+    public List<Effect> getEffects(Player player) {
         return DatabaseFunctions.getPlayerEffects(player);
     }
 
     public void showBedwarsEffectsMenu(Player player) {
-        List<String> effects = getEffects(player);
+        List<Effect> effects = getEffects(player);
         if (effects == null) {
             player.sendMessage(ChatColor.RED + "Wystąpił błąd podczas otwierania menu." +
                     " Spróbuj ponownie za chwilę lub skontaktuj się z administracją.");
@@ -136,9 +129,21 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
     }
 
     public void playEffect(Player player, EFFECT_EVENT event, @Nullable Location location) {
+        Bukkit.broadcastMessage("Playing event effect: " + event.name() + " for player: " + player.getName());
+
         EffectsProfile profile = getEffectsProfile(player);
 
-        String[] split = profile.getEffect(event).split(";;");
+        String effect = profile.getVisibleEffect(event);
+        if (effect == null) return;
+
+        String[] split = effect.split(";;");
+        if (split.length < 2) {
+            Bukkit.getLogger().warning("Niepoprawny efekt: " + effect);
+            return;
+        }
+
+
+        Bukkit.broadcastMessage("" + Arrays.toString(split));
 
         String style = split[0];
         String particle = split[1];
@@ -180,7 +185,7 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
 
     }
 
-    private EffectsProfile getEffectsProfile(Player player) {
+    public EffectsProfile getEffectsProfile(Player player) {
         return DatabaseFunctions.getEffectsProfile(player);
     }
 

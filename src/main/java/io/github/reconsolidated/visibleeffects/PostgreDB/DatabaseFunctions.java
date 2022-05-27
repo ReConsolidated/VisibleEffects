@@ -1,5 +1,6 @@
 package io.github.reconsolidated.visibleeffects.PostgreDB;
 
+import io.github.reconsolidated.visibleeffects.Effect;
 import io.github.reconsolidated.visibleeffects.EffectsProfile;
 import io.github.reconsolidated.visibleeffects.VisibleEffects;
 import lombok.AllArgsConstructor;
@@ -41,21 +42,47 @@ public class DatabaseFunctions {
             Statement statement = DatabaseConnector.getSql().createStatement();
 
             String sql = """
-                    SELECT event_name, name FROM visible_effects a INNER JOIN (SELECT effect_id, event_name 
+                    SELECT a.effect_id, event_name, name FROM visible_effects a INNER JOIN (SELECT effect_id, event_name 
                     											    FROM visible_effects_profile_data WHERE 
                     											    player_uuid='%s') b ON a.effect_id=b.effect_id;
                     """.formatted(player.getUniqueId().toString());
             statement.executeQuery(sql);
             ResultSet result = statement.getResultSet();
-            Map<VisibleEffects.EFFECT_EVENT, String> r = new HashMap<>();
+            Map<VisibleEffects.EFFECT_EVENT, Effect> r = new HashMap<>();
             while (result.next()) {
-                r.put(VisibleEffects.EFFECT_EVENT.valueOf(result.getString("event_name")), result.getString("name"));
+                r.put(VisibleEffects.EFFECT_EVENT.valueOf(result.getString("event_name")),
+                        new Effect(result.getLong("effect_id"), result.getString("name")));
             }
             profiles.removeIf((profile) -> profile.getPlayerUUID().equals(player.getUniqueId()));
             profiles.add(new EffectsProfile(player.getUniqueId(), r));
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
+    }
+
+
+    public static void setProfileActiveEffect(Player player, VisibleEffects.EFFECT_EVENT event, Effect effect) {
+        if (DatabaseConnector.getSql() == null) {
+            Bukkit.getLogger().warning("Database is not connected.");
+            return;
+        }
+
+        try {
+            Statement statement = DatabaseConnector.getSql().createStatement();
+
+            String sql = "DELETE FROM visible_effects_profile_data " +
+                    "WHERE player_uuid='" + player.getUniqueId() + "' AND event_name='" + event.name() + "';";
+            statement.executeUpdate(sql);
+
+            sql = "INSERT into visible_effects_profile_data \n" +
+                    "(player_uuid, event_name, effect_id)\n" +
+                    "values ('%s', '%s', %d);".formatted(player.getUniqueId().toString(), event.name(), effect.getID());
+            statement.executeUpdate(sql);
+            statement.close();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+
     }
 
 
@@ -146,7 +173,7 @@ public class DatabaseFunctions {
         return true;
     }
 
-    public static List<String> loadPlayerEffects(Player player) {
+    public static List<Effect> loadPlayerEffects(Player player) {
         if (DatabaseConnector.getSql() == null) {
             Bukkit.getLogger().warning("Database is not connected.");
             return null;
@@ -155,16 +182,16 @@ public class DatabaseFunctions {
         try {
             Statement statement = DatabaseConnector.getSql().createStatement();
 
-            String sql = "SELECT name FROM " +
+            String sql = "SELECT a.effect_id, name FROM " +
                     "visible_effects a INNER JOIN (SELECT effect_id " +
                     "FROM visible_effects_players WHERE " +
                     "player_name='" + player.getName() + "') b ON " +
                     " a.effect_id=b.effect_id;";
             statement.executeQuery(sql);
             ResultSet result = statement.getResultSet();
-            List<String> r = new ArrayList<>();
+            List<Effect> r = new ArrayList<>();
             while (result.next()) {
-                r.add(result.getString("name"));
+                r.add(new Effect(result.getLong("effect_id"), result.getString("name")));
             }
             loadedEffects.removeIf((le) -> le.playerUUID.equals(player.getUniqueId()));
             loadedEffects.add(new LoadedEffects(player.getUniqueId(), r));
@@ -175,14 +202,14 @@ public class DatabaseFunctions {
         }
     }
 
-    public static List<String> getPlayerEffects(Player player) {
+    public static List<Effect> getPlayerEffects(Player player) {
         for (LoadedEffects le : loadedEffects) {
             if (le.playerUUID.equals(player.getUniqueId())) {
                 return le.effects;
             }
         }
 
-        return loadPlayerEffects(player);
+        return null;
     }
 
     public static Map<Material, Integer> getPlayerCMDData(String name) {
@@ -554,10 +581,12 @@ public class DatabaseFunctions {
     }
 
 
+
+
     @AllArgsConstructor
     private static class LoadedEffects {
         public UUID playerUUID;
-        public List<String> effects;
+        public List<Effect> effects;
 
         @Override
         public boolean equals(Object obj) {

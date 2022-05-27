@@ -66,6 +66,9 @@ public class VPCommand implements CommandExecutor {
             else if (args[0].equalsIgnoreCase("skins")) {
                 new SkinsMenuInventory(plugin, (Player) sender);
             }
+            else if (args[0].equalsIgnoreCase("uuid")) {
+                sender.sendMessage("ID: " + ((Player)sender).getUniqueId());
+            }
             else {
                 onHelp(sender);
             }
