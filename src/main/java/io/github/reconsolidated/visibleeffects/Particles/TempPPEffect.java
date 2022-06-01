@@ -24,6 +24,7 @@ public class TempPPEffect {
         Bukkit.getScheduler().runTaskLater(VisibleEffects.getInstance(), () -> {
             ppAPI.removeFixedEffect(Bukkit.getConsoleSender(), effect.getId());
         }, ticks);
+
     }
 
     public static void createFixed(ParticleEffect pEffect, ParticleStyle style, Location location, long ticks, OrdinaryColor color) {
@@ -56,5 +57,26 @@ public class TempPPEffect {
         Bukkit.getScheduler().runTaskLater(VisibleEffects.getInstance(), () -> {
             ppAPI.removeActivePlayerParticle(player, effect.getId());
         }, ticks);
+    }
+
+    public static void createPlayer(ParticleEffect pEffect, ParticleStyle style, Player player, OrdinaryColor color) {
+        Bukkit.broadcastMessage("Adding effect to playerparticles");
+
+        ParticlePair effect = ppAPI.addActivePlayerParticle(
+                player,
+                pEffect, style, color);
+
+        Bukkit.broadcastMessage("Effect: " + effect.toString());
+
+    }
+
+    public static void createPlayer(ParticleEffect pEffect, ParticleStyle style, Player player) {
+        Bukkit.broadcastMessage("Adding effect to playerparticles");
+        ParticlePair effect = ppAPI.addActivePlayerParticle(
+                player,
+                pEffect, style);
+
+        Bukkit.broadcastMessage("Effect: " + effect.toString());
+
     }
 }

@@ -1,9 +1,9 @@
-package io.github.reconsolidated.visibleeffects.EffectsMenu.EffectsProfiles;
+package io.github.reconsolidated.visibleeffects.Effects.EffectsMenu.EffectsProfiles;
 
 import io.github.reconsolidated.visibleeffects.CustomInventory.ClickOnlyItem;
 import io.github.reconsolidated.visibleeffects.CustomInventory.InventoryMenu;
-import io.github.reconsolidated.visibleeffects.Effect;
-import io.github.reconsolidated.visibleeffects.EffectsProfile;
+import io.github.reconsolidated.visibleeffects.Effects.Effect;
+import io.github.reconsolidated.visibleeffects.Effects.EffectsProfile;
 import io.github.reconsolidated.visibleeffects.PostgreDB.DatabaseFunctions;
 import io.github.reconsolidated.visibleeffects.VisibleEffects;
 import org.bukkit.Bukkit;
@@ -15,9 +15,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class EffectsEventMenu extends InventoryMenu {
     private final int itemsPerPage = 28;
@@ -34,6 +32,7 @@ public class EffectsEventMenu extends InventoryMenu {
             player.sendMessage(ChatColor.RED + "Podczas ładowania menu efektów wystąpił błąd.");
             throw new RuntimeException("Profile was null for player: " + player.getName());
         }
+
         if (profile.getEffect(event) != null) {
             current = profile.getEffect(event).getID();
         }
@@ -43,7 +42,6 @@ public class EffectsEventMenu extends InventoryMenu {
             player.sendMessage(ChatColor.RED + "Nie udało się otworzyć menu. Zgłoś to administratorowi.");
             player.closeInventory();
             return;
-
         }
 
 
@@ -56,7 +54,7 @@ public class EffectsEventMenu extends InventoryMenu {
 
         List<Effect> eventEffects = new ArrayList<>();
         for (Effect effect : effects) {
-            if (effect.getName().startsWith(event.name())) {
+            if (effect.getEvent().equals(event)) {
                 eventEffects.add(effect);
             }
         }
@@ -71,7 +69,7 @@ public class EffectsEventMenu extends InventoryMenu {
 
             Effect effect = eventEffects.get(i);
 
-            ItemStack item = VisibleEffects.getInstance().getItemStack("effect_" + effect.getID());
+            ItemStack item = VisibleEffects.getInstance().getItemStack("" + effect.getID());
             if (effect.getID() == current) {
                 item.addUnsafeEnchantment(Enchantment.DURABILITY, 1);
                 item.addItemFlags(ItemFlag.HIDE_ENCHANTS);

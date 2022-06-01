@@ -3,11 +3,16 @@ package io.github.reconsolidated.visibleeffects;
 import dev.esophose.playerparticles.api.PlayerParticlesAPI;
 import dev.esophose.playerparticles.particles.FixedParticleEffect;
 import dev.esophose.playerparticles.particles.ParticleEffect;
+import dev.esophose.playerparticles.particles.ParticlePair;
 import dev.esophose.playerparticles.particles.data.OrdinaryColor;
 import dev.esophose.playerparticles.styles.ParticleStyle;
 import io.github.reconsolidated.itemprovider.ItemProvider;
 import io.github.reconsolidated.visibleeffects.BattlePass.BattlePassCommand;
-import io.github.reconsolidated.visibleeffects.EffectsMenu.PlayerEffectsInventory;
+import io.github.reconsolidated.visibleeffects.Effects.Effect;
+import io.github.reconsolidated.visibleeffects.Effects.EffectsCommand;
+import io.github.reconsolidated.visibleeffects.Effects.EffectsImplementation;
+import io.github.reconsolidated.visibleeffects.Effects.EffectsMenu.PlayerEffectsInventory;
+import io.github.reconsolidated.visibleeffects.Effects.EffectsProfile;
 import io.github.reconsolidated.visibleeffects.Particles.TempPPEffect;
 import io.github.reconsolidated.visibleeffects.Placeholders.BedwarsRankPlaceholders;
 import io.github.reconsolidated.visibleeffects.PostgreDB.DatabaseConnector;
@@ -20,13 +25,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
 import java.util.List;
 
 public final class VisibleEffects extends JavaPlugin implements Listener {
@@ -68,6 +73,7 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
         }, 40L);
 
         new BedwarsRankPlaceholders(this).register();
+        new EffectsImplementation(this);
         DefaultConfig.loadDefaultConfig();
         DatabaseConnector.connect();
         getCommand("vp").setExecutor(new VPCommand(this));
@@ -87,12 +93,17 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
+
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
             DatabaseFunctions.loadPlayerEffects(event.getPlayer());
             DatabaseFunctions.loadProfile(event.getPlayer());
         });
     }
 
+    @EventHandler
+    public void onLeave(PlayerQuitEvent event) {
+        DatabaseFunctions.removeProfile(event.getPlayer());
+    }
 
     /**
      * Makes database request.
@@ -105,6 +116,7 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
     public boolean giveEffect(Player player, String effect, Long time) {
         return DatabaseFunctions.addPlayerEffect(player, effect, System.currentTimeMillis() + time);
     }
+
 
     @Nullable
     public List<Effect> getEffects(Player player) {
@@ -133,56 +145,54 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
 
         EffectsProfile profile = getEffectsProfile(player);
 
-        String effect = profile.getVisibleEffect(event);
-        if (effect == null) return;
+        String effects = profile.getVisibleEffect(event);
+        if (effects == null) return;
 
-        String[] split = effect.split(";;");
-        if (split.length < 2) {
-            Bukkit.getLogger().warning("Niepoprawny efekt: " + effect);
-            return;
-        }
+        String[] allEffects = effects.split("\\|");
 
-
-        Bukkit.broadcastMessage("" + Arrays.toString(split));
-
-        String style = split[0];
-        String particle = split[1];
-
-        long time = 1000;
-
-        if (split.length == 3) {
-            String timeS = split[2];
-            try {
-                time = Long.parseLong(timeS);
-            } catch (NumberFormatException ignored) {
+        for (String effect : allEffects) {
+            String[] split = effect.split(";;");
+            if (split.length < 2) {
+                Bukkit.getLogger().warning("Niepoprawny efekt: " + effects);
+                return;
             }
-        }
 
-        if (particle.contains(".")) {
-            String[] particleArgs = particle.split("\\.");
-            particle = particleArgs[0];
-            int red = Integer.parseInt(particleArgs[1]);
-            int green = Integer.parseInt(particleArgs[2]);
-            int blue = Integer.parseInt(particleArgs[3]);
 
-            OrdinaryColor color = new OrdinaryColor(red, green, blue);
+            String style = split[0];
+            String particle = split[1];
 
-            if (event.isFixed()) {
-                TempPPEffect.createFixed(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), location, time, color);
+            long time = 1000;
+
+            if (split.length == 3) {
+                String timeS = split[2];
+                try {
+                    time = Long.parseLong(timeS);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+
+            if (particle.contains(".")) {
+                String[] particleArgs = particle.split("\\.");
+                particle = particleArgs[0];
+                int red = Integer.parseInt(particleArgs[1]);
+                int green = Integer.parseInt(particleArgs[2]);
+                int blue = Integer.parseInt(particleArgs[3]);
+
+                OrdinaryColor color = new OrdinaryColor(red, green, blue);
+
+                if (event.isFixed()) {
+                    TempPPEffect.createFixed(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), location, time, color);
+                } else {
+                    TempPPEffect.createPlayer(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), player, color);
+                }
             } else {
-                TempPPEffect.createPlayer(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), player, time, color);
-            }
-        } else {
-            if (event.isFixed()) {
-                TempPPEffect.createFixed(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), location, time);
-            } else {
-                TempPPEffect.createPlayer(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), player, time);
+                if (event.isFixed()) {
+                    TempPPEffect.createFixed(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), location, time);
+                } else {
+                    TempPPEffect.createPlayer(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), player);
+                }
             }
         }
-
-
-
-
     }
 
     public EffectsProfile getEffectsProfile(Player player) {
@@ -200,10 +210,20 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
     }
 
     public enum EFFECT_EVENT {
-        KILL, ARROW, FINAL_KILL, VICTORY, BED_DESTROYED;
+        KILL, ARROW, FINAL_KILL, VICTORY, BED_DESTROYED, SWORD, PICKAXE, ARROW_HIT;
+
+        public static EFFECT_EVENT get(String event_name) {
+            for (EFFECT_EVENT event : EFFECT_EVENT.values()) {
+                if (event.name().equalsIgnoreCase(event_name) || event.toString().equalsIgnoreCase(event_name)) {
+                    return event;
+                }
+            }
+
+            throw new IllegalArgumentException("No such EFFECT_EVENT:" + event_name);
+        }
 
         public boolean isFixed() {
-            return this != ARROW;
+            return this != ARROW && this != SWORD && this != PICKAXE;
         }
     }
 

@@ -1,5 +1,6 @@
-package io.github.reconsolidated.visibleeffects;
+package io.github.reconsolidated.visibleeffects.Effects;
 
+import io.github.reconsolidated.visibleeffects.VisibleEffects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.bukkit.Bukkit;

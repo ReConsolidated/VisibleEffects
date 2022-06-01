@@ -1,7 +1,8 @@
 package io.github.reconsolidated.visibleeffects.PostgreDB;
 
-import io.github.reconsolidated.visibleeffects.Effect;
-import io.github.reconsolidated.visibleeffects.EffectsProfile;
+import io.github.reconsolidated.visibleeffects.Effects.Effect;
+import io.github.reconsolidated.visibleeffects.Effects.EffectsImplementation;
+import io.github.reconsolidated.visibleeffects.Effects.EffectsProfile;
 import io.github.reconsolidated.visibleeffects.VisibleEffects;
 import lombok.AllArgsConstructor;
 import org.bukkit.Bukkit;
@@ -28,9 +29,18 @@ public class DatabaseFunctions {
             }
         }
 
+        Bukkit.getLogger().info("Player UUID: " + player.getUniqueId());
+        for (EffectsProfile profile : profiles) {
+            Bukkit.getLogger().info("Profile: " + profile.getPlayerUUID());
+        }
         loadProfile(player);
         return null;
     }
+
+    public static void removeProfile(Player player) {
+        profiles.removeIf(profile -> profile.getPlayerUUID().equals(player.getUniqueId()));
+    }
+
 
     public static void loadProfile(Player player) {
         if (DatabaseConnector.getSql() == null) {
@@ -41,20 +51,25 @@ public class DatabaseFunctions {
         try {
             Statement statement = DatabaseConnector.getSql().createStatement();
 
+
+
             String sql = """
                     SELECT a.effect_id, event_name, name FROM visible_effects a INNER JOIN (SELECT effect_id, event_name 
                     											    FROM visible_effects_profile_data WHERE 
                     											    player_uuid='%s') b ON a.effect_id=b.effect_id;
                     """.formatted(player.getUniqueId().toString());
+
             statement.executeQuery(sql);
             ResultSet result = statement.getResultSet();
             Map<VisibleEffects.EFFECT_EVENT, Effect> r = new HashMap<>();
             while (result.next()) {
-                r.put(VisibleEffects.EFFECT_EVENT.valueOf(result.getString("event_name")),
-                        new Effect(result.getLong("effect_id"), result.getString("name")));
+                r.put(VisibleEffects.EFFECT_EVENT.get(result.getString("event_name")),
+                        new Effect(result.getLong("effect_id"), result.getString("name"),
+                                VisibleEffects.EFFECT_EVENT.get(result.getString("event_name"))));
             }
             profiles.removeIf((profile) -> profile.getPlayerUUID().equals(player.getUniqueId()));
             profiles.add(new EffectsProfile(player.getUniqueId(), r));
+            EffectsImplementation.onProfileLoad(player);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
@@ -182,16 +197,25 @@ public class DatabaseFunctions {
         try {
             Statement statement = DatabaseConnector.getSql().createStatement();
 
+
             String sql = "SELECT a.effect_id, name FROM " +
                     "visible_effects a INNER JOIN (SELECT effect_id " +
                     "FROM visible_effects_players WHERE " +
                     "player_name='" + player.getName() + "') b ON " +
                     " a.effect_id=b.effect_id;";
+
+            if (player.hasPermission("ve.effects.*")) {
+                sql = "SELECT effect_id, name, event FROM " +
+                        "visible_effects";
+            }
+
             statement.executeQuery(sql);
             ResultSet result = statement.getResultSet();
             List<Effect> r = new ArrayList<>();
             while (result.next()) {
-                r.add(new Effect(result.getLong("effect_id"), result.getString("name")));
+                r.add(new Effect(result.getLong("effect_id"),
+                        result.getString("name"),
+                        VisibleEffects.EFFECT_EVENT.get(result.getString("event"))));
             }
             loadedEffects.removeIf((le) -> le.playerUUID.equals(player.getUniqueId()));
             loadedEffects.add(new LoadedEffects(player.getUniqueId(), r));

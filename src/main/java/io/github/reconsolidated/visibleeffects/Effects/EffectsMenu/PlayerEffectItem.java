@@ -1,4 +1,4 @@
-package io.github.reconsolidated.visibleeffects.EffectsMenu;
+package io.github.reconsolidated.visibleeffects.Effects.EffectsMenu;
 
 import io.github.reconsolidated.visibleeffects.CustomInventory.ClickOnlyItem;
 import io.github.reconsolidated.visibleeffects.VisibleEffects;
@@ -8,8 +8,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 public class PlayerEffectItem extends ClickOnlyItem {
-    public PlayerEffectItem(Player player, String effect, int row, int column) {
-        super(getItemStack(player, effect), row, column, ( event ) -> {
+    public PlayerEffectItem(Player player, long id, String effect, int row, int column) {
+        super(getItemStack(player, "" + id), row, column, ( event ) -> {
             onPlayerClickEffect(player, effect);
         });
     }
@@ -18,8 +18,8 @@ public class PlayerEffectItem extends ClickOnlyItem {
         player.sendMessage(ChatColor.GREEN + "effect clicked: " + effect);
     }
 
-    public static ItemStack getItemStack(Player player, String effect) {
-        ItemStack item = VisibleEffects.getInstance().getItemProvider().getItem("visible_effects", effect);
+    public static ItemStack getItemStack(Player player, String id) {
+        ItemStack item = VisibleEffects.getInstance().getItemProvider().getItem("visible_effects", id);
         if (item != null) {
             return item;
         }

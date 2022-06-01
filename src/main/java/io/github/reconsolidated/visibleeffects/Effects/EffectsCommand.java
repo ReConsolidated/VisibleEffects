@@ -1,7 +1,6 @@
-package io.github.reconsolidated.visibleeffects;
+package io.github.reconsolidated.visibleeffects.Effects;
 
-import io.github.reconsolidated.visibleeffects.EffectsMenu.EffectsProfiles.EffectsEventMenu;
-import io.github.reconsolidated.visibleeffects.EffectsMenu.EffectsProfiles.EffectsProfileMenu;
+import io.github.reconsolidated.visibleeffects.Effects.EffectsMenu.EffectsProfiles.EffectsProfileMenu;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
