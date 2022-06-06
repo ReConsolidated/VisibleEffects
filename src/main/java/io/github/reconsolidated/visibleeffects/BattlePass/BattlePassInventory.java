@@ -4,6 +4,7 @@ import io.github.reconsolidated.visibleeffects.CustomInventory.ClickOnlyItem;
 import io.github.reconsolidated.visibleeffects.PostgreDB.DatabaseFunctions;
 import io.github.reconsolidated.visibleeffects.CustomInventory.InventoryMenu;
 import io.github.reconsolidated.visibleeffects.VisibleEffects;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -12,6 +13,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
@@ -62,15 +64,19 @@ public class BattlePassInventory extends InventoryMenu {
         for (int i = 0; i<7; i++) {
             int number = (page-1) * 7 + i+1;
             boolean hasEnoughProgressToOpen = progress/1000 >= number;
+            int neededToOpen = number * 1000 - progress;
+
             if (openedPremium.contains(number)) {
-                addItem(new ClickOnlyItem(enchanted(VisibleEffects.getInstance().getItemStack(premiumItems.get(i))), 2, 2+i, (event) -> {
+
+                addItem(new ClickOnlyItem(enchanted(VisibleEffects.getInstance().getItemStack(currentPass + "_premium_" + i)), 2, 2+i, (event) -> {
                 }));
             } else {
                 int finalI = i;
-                addItem(new ClickOnlyItem(VisibleEffects.getInstance().getItemStack(premiumItems.get(i)), 2, 2+i, (event) -> {
+                ItemStack item = VisibleEffects.getInstance().getItemStack(premiumItems.get(i));
+                addItem(new ClickOnlyItem(item, 2, 2+i, (event) -> {
                     if (!hasPremium) {
                         player.sendMessage(ChatColor.GOLD + "Ten przedmiot pochodzi z Karnetu Premium. " +
-                                "Aby go zakupić, udaj się na stronę Grypciocraft.pl/karnety.");
+                                "Aby go zakupić, udaj się na stronę GRPMC.pl/karnety.");
                     }
                     else {
                         if (hasEnoughProgressToOpen) {
@@ -78,10 +84,17 @@ public class BattlePassInventory extends InventoryMenu {
                                 DatabaseFunctions.setOpenedPremium(player, number);
                                 String action = getAction(premiumItems.get(finalI));
                                 Bukkit.getScheduler().runTask(plugin, () -> {
+                                    Bukkit.broadcastMessage(
+                                            ChatColor.translateAlternateColorCodes(
+                                                    '&', ("&d&lGRP&b&lMC&f&l.pl &7&l> &eGracz &d%s " +
+                                                            "&eodebral &b%s &ew &6Karnecie Premium&e!").formatted(player.getName(), item)));
                                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), action.replaceAll("<p>", player.getName()));
                                 });
                                 load(player, page);
                             });
+                        } else {
+                            player.sendMessage(ChatColor.RED + "Potrzebujesz jeszcze "
+                                    + ChatColor.AQUA + neededToOpen + " punktów, aby to zdobyć.");
                         }
                     }
 
@@ -92,9 +105,9 @@ public class BattlePassInventory extends InventoryMenu {
             ItemStack pane;
 
             if (hasEnoughProgressToOpen) {
-                pane = new ItemStack(Material.LIME_STAINED_GLASS_PANE);
+                pane = getAvailablePane();
             } else {
-                pane = new ItemStack(Material.RED_STAINED_GLASS_PANE);
+                pane = getUnavailablePane(neededToOpen);
             }
             addItem(new ClickOnlyItem(pane, 3, 2+i, (event) -> {
 
@@ -104,17 +117,48 @@ public class BattlePassInventory extends InventoryMenu {
                 addItem(new ClickOnlyItem(enchanted(VisibleEffects.getInstance().getItemStack(items.get(i))), 4, 2+i, (event) -> {
                 }));
             } else {
-                addItem(new ClickOnlyItem(VisibleEffects.getInstance().getItemStack(items.get(i)), 4, 2+i, (event) -> {
+                int finalI = i;
+                ItemStack item = VisibleEffects.getInstance().getItemStack(items.get(i));
+                addItem(new ClickOnlyItem(item, 4, 2+i, (event) -> {
                     if (hasEnoughProgressToOpen) {
                         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                             DatabaseFunctions.setOpened(player, number);
+                            String action = getAction(items.get(finalI));
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes(
+                                        '&', "&d&lGRP&b&lMC&f&l.pl &7&l> &eGracz &d%s &eodebral &b%s &ew &fZwykłym Karnecie&e!"
+                                                .formatted(player.getName(), item)));
+                                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), action.replaceAll("<p>", player.getName()));
+                            });
                             load(player, page);
                         });
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Potrzebujesz jeszcze "
+                                + ChatColor.AQUA + neededToOpen + " punktów, aby to zdobyć.");
                     }
                 }));
             }
 
         }
+    }
+
+    private ItemStack getAvailablePane() {
+        ItemStack item = new ItemStack(Material.LIME_STAINED_GLASS_PANE);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(Component.text("§bDostępne!"));
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private ItemStack getUnavailablePane(int needed) {
+        ItemStack item = new ItemStack(Material.RED_STAINED_GLASS_PANE);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(Component.text("§cNiedostępne!"));
+
+        meta.lore(List.of(Component.text(""),
+                Component.text("Potrzebujesz jeszcze %d punktów!".formatted(needed))));
+        item.setItemMeta(meta);
+        return item;
     }
 
     private String getAction(String itemName) {
@@ -125,6 +169,7 @@ public class BattlePassInventory extends InventoryMenu {
     private ItemStack enchanted(ItemStack item) {
         item.addUnsafeEnchantment(Enchantment.DURABILITY, 1);
         item.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+
         return item;
     }
 

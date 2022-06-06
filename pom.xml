@@ -6,7 +6,7 @@
 
     <groupId>io.github.reconsolidated</groupId>
     <artifactId>visibleeffects</artifactId>
-    <version>1.18</version>
+    <version>1.19</version>
     <packaging>jar</packaging>
 
     <name>VisibleEffects</name>

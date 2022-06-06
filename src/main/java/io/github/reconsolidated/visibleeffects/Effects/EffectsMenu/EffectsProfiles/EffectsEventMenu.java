@@ -3,6 +3,7 @@ package io.github.reconsolidated.visibleeffects.Effects.EffectsMenu.EffectsProfi
 import io.github.reconsolidated.visibleeffects.CustomInventory.ClickOnlyItem;
 import io.github.reconsolidated.visibleeffects.CustomInventory.InventoryMenu;
 import io.github.reconsolidated.visibleeffects.Effects.Effect;
+import io.github.reconsolidated.visibleeffects.Effects.EffectsImplementation;
 import io.github.reconsolidated.visibleeffects.Effects.EffectsProfile;
 import io.github.reconsolidated.visibleeffects.PostgreDB.DatabaseFunctions;
 import io.github.reconsolidated.visibleeffects.VisibleEffects;
@@ -81,6 +82,7 @@ public class EffectsEventMenu extends InventoryMenu {
 
                 Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                     DatabaseFunctions.setProfileActiveEffect(player, event, effect);
+                    EffectsImplementation.onProfileLoad(player);
                 });
 
                 new EffectsEventMenu(player, event, page);

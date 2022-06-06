@@ -14,7 +14,6 @@ public class PlayerEffectsInventory extends InventoryMenu {
         super(plugin, player, "Twoje efekty", 6);
         fillWithEmptyItems();
 
-        Bukkit.broadcastMessage("" + effects);
         int row = 1;
         int column = 1;
         for (Effect effect : effects) {

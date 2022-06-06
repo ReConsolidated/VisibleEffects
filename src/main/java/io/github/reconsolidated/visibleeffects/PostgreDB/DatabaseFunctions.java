@@ -1,9 +1,11 @@
 package io.github.reconsolidated.visibleeffects.PostgreDB;
 
+import io.github.reconsolidated.visibleeffects.CustomModelDataProvider;
 import io.github.reconsolidated.visibleeffects.Effects.Effect;
 import io.github.reconsolidated.visibleeffects.Effects.EffectsImplementation;
 import io.github.reconsolidated.visibleeffects.Effects.EffectsProfile;
 import io.github.reconsolidated.visibleeffects.VisibleEffects;
+import it.unimi.dsi.fastutil.Pair;
 import lombok.AllArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -17,9 +19,8 @@ import java.util.*;
 
 public class DatabaseFunctions {
 
-    private static Set<LoadedEffects> loadedEffects = new HashSet<>();
-    private static Set<EffectsProfile> profiles = new HashSet<>();
-
+    private static final Set<LoadedEffects> loadedEffects = new HashSet<>();
+    private static final Set<EffectsProfile> profiles = new HashSet<>();
 
 
     public static EffectsProfile getEffectsProfile(Player player) {
@@ -54,8 +55,8 @@ public class DatabaseFunctions {
 
 
             String sql = """
-                    SELECT a.effect_id, event_name, name FROM visible_effects a INNER JOIN (SELECT effect_id, event_name 
-                    											    FROM visible_effects_profile_data WHERE 
+                    SELECT a.effect_id, event_name, name FROM visible_effects a INNER JOIN (SELECT effect_id, event_name
+                    											    FROM visible_effects_profile_data WHERE
                     											    player_uuid='%s') b ON a.effect_id=b.effect_id;
                     """.formatted(player.getUniqueId().toString());
 
@@ -69,6 +70,7 @@ public class DatabaseFunctions {
             }
             profiles.removeIf((profile) -> profile.getPlayerUUID().equals(player.getUniqueId()));
             profiles.add(new EffectsProfile(player.getUniqueId(), r));
+
             EffectsImplementation.onProfileLoad(player);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
@@ -94,6 +96,9 @@ public class DatabaseFunctions {
                     "values ('%s', '%s', %d);".formatted(player.getUniqueId().toString(), event.name(), effect.getID());
             statement.executeUpdate(sql);
             statement.close();
+
+
+
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
@@ -236,7 +241,7 @@ public class DatabaseFunctions {
         return null;
     }
 
-    public static Map<Material, Integer> getPlayerCMDData(String name) {
+    public static Map<Material, Integer> getPlayerCMDData(Player player) {
         if (DatabaseConnector.getSql() == null) {
             Bukkit.getLogger().warning("Database is not connected.");
             return null;
@@ -247,7 +252,8 @@ public class DatabaseFunctions {
 
             String sql = "SELECT * FROM " +
                     "cmd_skins WHERE " +
-                    "player_name='" + name + "';";
+                    "player_name='" + player.getName() + "';";
+
             statement.executeQuery(sql);
             ResultSet result = statement.getResultSet();
             Map<Material, Integer> data = new HashMap<>();
@@ -255,7 +261,7 @@ public class DatabaseFunctions {
                 try {
                     data.put(Material.valueOf(result.getString("material")), result.getInt("cmd"));
                 } catch (IllegalArgumentException exception) {
-                    Bukkit.getLogger().warning("Invalid material value while parsing " + name + " cmd data: "
+                    Bukkit.getLogger().warning("Invalid material value while parsing " + player.getName() + " cmd data: "
                             + result.getString("material"));
                 }
             }
@@ -605,6 +611,32 @@ public class DatabaseFunctions {
     }
 
 
+    public static CustomModelDataProvider.AvailableCMDData getPlayerAvailableCMDData(Player player) {
+        if (DatabaseConnector.getSql() == null) {
+            Bukkit.getLogger().warning("Database is not connected.");
+            return null;
+        }
+
+        try {
+            Statement statement = DatabaseConnector.getSql().createStatement();
+
+            String sql = "SELECT material, cmd FROM " +
+                    "available_skins WHERE " +
+                    "player_name='%s';".formatted(player.getName());
+            statement.executeQuery(sql);
+            ResultSet result = statement.getResultSet();
+            List<Pair<Material,Integer>> list = new ArrayList<>();
+            while (result.next()) {
+                Pair<Material, Integer> pair = Pair.of(Material.getMaterial(result.getString("material")), result.getInt("cmd"));
+                list.add(pair);
+            }
+            return new CustomModelDataProvider.AvailableCMDData(list);
+
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            return null;
+        }
+    }
 
 
     @AllArgsConstructor

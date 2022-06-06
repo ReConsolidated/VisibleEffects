@@ -1,5 +1,6 @@
 package io.github.reconsolidated.visibleeffects.CustomInventory;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -12,7 +13,9 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
@@ -57,7 +60,12 @@ public class InventoryMenu implements Listener {
 
     protected void fillWith(Material material) {
         for (int i = 0; i<inventory.getSize(); i++) {
-            addItem(new ClickOnlyItem(new ItemStack(material), i/9 + 1, (i+1)%9 + 1, (ignored) -> {}));
+            ItemStack item = new ItemStack(material);
+            item.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            ItemMeta meta = item.getItemMeta();
+            meta.displayName(Component.text("§c"));
+            item.setItemMeta(meta);
+            addItem(new ClickOnlyItem(item, i/9 + 1, (i+1)%9 + 1, (ignored) -> {}));
         }
     }
 

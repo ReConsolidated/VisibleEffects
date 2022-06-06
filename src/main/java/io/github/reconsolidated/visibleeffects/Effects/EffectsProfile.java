@@ -21,12 +21,7 @@ public class EffectsProfile {
     public String getVisibleEffect(VisibleEffects.EFFECT_EVENT event) {
         Effect effect = getEffect(event);
         if (effect == null) return null;
-        String[] split = effect.getName().split(":");
-        if (split.length == 1) {
-            Bukkit.getLogger().warning("Niepoprawny effekt: " + effect);
-            return null;
-        }
-        return split[1];
+        return effect.getName();
     }
 
     @Override

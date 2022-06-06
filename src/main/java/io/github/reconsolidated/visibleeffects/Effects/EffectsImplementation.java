@@ -8,7 +8,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 
 public class EffectsImplementation implements Listener {
 
@@ -29,7 +28,6 @@ public class EffectsImplementation implements Listener {
     }
 
     public static void onProfileLoad(Player player) {
-        Bukkit.broadcastMessage("Removing all particles");
 
         for (ParticlePair effect : VisibleEffects.ppAPI.getActivePlayerParticles(player)) {
             VisibleEffects.ppAPI.removeActivePlayerParticle(player, effect.getId());

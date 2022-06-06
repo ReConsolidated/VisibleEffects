@@ -42,8 +42,26 @@ public class BedwarsRankPlaceholders extends PlaceholderExpansion implements Lis
 
     @Override
     public String onRequest(OfflinePlayer player, String params) {
-        if(params.equalsIgnoreCase("player_rank_number")){
+        if(params.equalsIgnoreCase("prn")){
             return "" + BedwarsData.getInstance().getData(player.getName()).getRank();
+        }
+        if(params.equalsIgnoreCase("prd")){
+            return "" + BedwarsData.getInstance().getData(player.getName()).getRankPrefix();
+        }
+        if(params.equalsIgnoreCase("prp")){
+            return "" + getPoints(BedwarsData.getInstance().getData(player.getName()).getElo());
+        }
+        if(params.equalsIgnoreCase("pk")){
+            return "" + BedwarsData.getInstance().getData(player.getName()).getKills();
+        }
+        if(params.equalsIgnoreCase("pfk")){
+            return "" + BedwarsData.getInstance().getData(player.getName()).getFinalKills();
+        }
+        if(params.equalsIgnoreCase("ps")){
+            return "" + BedwarsData.getInstance().getData(player.getName()).getStreak();
+        }
+        if(params.equalsIgnoreCase("battlepass_progress")){
+            return "" + BedwarsData.getInstance().getData(player.getName()).getStreak();
         }
 
         if(params.startsWith("elo_rank_")) {
@@ -115,6 +133,16 @@ public class BedwarsRankPlaceholders extends PlaceholderExpansion implements Lis
 
 
         return null; // Placeholder is unknown by the Expansion
+    }
+
+    private int getPoints(double elo) {
+        if (elo < 500) {
+            return 0;
+        }
+        if (elo > 2000) {
+            return (int) elo - 2000;
+        }
+        return (int) elo % 100;
     }
 
 

@@ -8,6 +8,7 @@ import dev.esophose.playerparticles.particles.data.OrdinaryColor;
 import dev.esophose.playerparticles.styles.ParticleStyle;
 import io.github.reconsolidated.itemprovider.ItemProvider;
 import io.github.reconsolidated.visibleeffects.BattlePass.BattlePassCommand;
+import io.github.reconsolidated.visibleeffects.BattlePass.ItemReadyRemainder;
 import io.github.reconsolidated.visibleeffects.Effects.Effect;
 import io.github.reconsolidated.visibleeffects.Effects.EffectsCommand;
 import io.github.reconsolidated.visibleeffects.Effects.EffectsImplementation;
@@ -81,6 +82,7 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
         getCommand("efekty").setExecutor(new EffectsCommand());
         getServer().getServicesManager().register(VisibleEffects.class, this, this, ServicePriority.Normal);
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(new ItemReadyRemainder(), this);
 
         cmdProvider = new CustomModelDataProvider();
 
@@ -140,8 +142,11 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
         item.setItemMeta(meta);
     }
 
+    public void update(Player player) {
+
+    }
+
     public void playEffect(Player player, EFFECT_EVENT event, @Nullable Location location) {
-        Bukkit.broadcastMessage("Playing event effect: " + event.name() + " for player: " + player.getName());
 
         EffectsProfile profile = getEffectsProfile(player);
 
@@ -151,7 +156,9 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
         String[] allEffects = effects.split("\\|");
 
         for (String effect : allEffects) {
-            String[] split = effect.split(";;");
+            String onlyEffect = effect.split(":")[1];
+
+            String[] split = onlyEffect.split(";;");
             if (split.length < 2) {
                 Bukkit.getLogger().warning("Niepoprawny efekt: " + effects);
                 return;
@@ -181,13 +188,13 @@ public final class VisibleEffects extends JavaPlugin implements Listener {
                 OrdinaryColor color = new OrdinaryColor(red, green, blue);
 
                 if (event.isFixed()) {
-                    TempPPEffect.createFixed(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), location, time, color);
+                    TempPPEffect.createFixed(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), location, time/50, color);
                 } else {
                     TempPPEffect.createPlayer(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), player, color);
                 }
             } else {
                 if (event.isFixed()) {
-                    TempPPEffect.createFixed(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), location, time);
+                    TempPPEffect.createFixed(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), location, time/50);
                 } else {
                     TempPPEffect.createPlayer(ParticleEffect.valueOf(particle), ParticleStyle.fromName(style), player);
                 }
