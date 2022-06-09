@@ -57,6 +57,9 @@ public class BedwarsRankPlaceholders extends PlaceholderExpansion implements Lis
         if(params.equalsIgnoreCase("pfk")){
             return "" + BedwarsData.getInstance().getData(player.getName()).getFinalKills();
         }
+        if(params.equalsIgnoreCase("pbd")){
+            return "" + BedwarsData.getInstance().getData(player.getName()).getBedsDestroyed();
+        }
         if(params.equalsIgnoreCase("ps")){
             return "" + BedwarsData.getInstance().getData(player.getName()).getStreak();
         }
@@ -106,6 +109,25 @@ public class BedwarsRankPlaceholders extends PlaceholderExpansion implements Lis
             try {
                 int number = Integer.parseInt(params.split("_")[2]);
                 PlayerData data = BedwarsData.getInstance().getFinalKillsTop(number);
+                return "" + data.getPlayerName();
+            } catch (NumberFormatException e) {
+                return "Incorrect number: " + params.split("_")[2];
+            }
+        }
+
+        if(params.startsWith("beds_bedsrank_")) {
+            try {
+                int number = Integer.parseInt(params.split("_")[2]);
+                PlayerData data = BedwarsData.getInstance().getBedsDestroyedTop(number);
+                return "" + (int) data.getBedsDestroyed();
+            } catch (NumberFormatException e) {
+                return "Incorrect number: " + params.split("_")[2];
+            }
+        }
+        if(params.startsWith("name_bedsrank_")) {
+            try {
+                int number = Integer.parseInt(params.split("_")[2]);
+                PlayerData data = BedwarsData.getInstance().getBedsDestroyedTop(number);
                 return "" + data.getPlayerName();
             } catch (NumberFormatException e) {
                 return "Incorrect number: " + params.split("_")[2];
